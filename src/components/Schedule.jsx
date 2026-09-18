@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 export default function Schedule({ bookings, onSelectSlot }) {
   const [viewMode, setViewMode] = useState('slots'); // 'slots' | 'timeline'
+  const [timeFilter, setTimeFilter] = useState('all'); // 'all' | 'morning' | 'afternoon' | 'evening'
   const [selectedDateStr, setSelectedDateStr] = useState(
     new Date().toISOString().split('T')[0]
   );
@@ -17,7 +18,13 @@ export default function Schedule({ bookings, onSelectSlot }) {
     return { iso, dow, num, fullDate: d };
   });
 
-  const formatHour = (h) => {
+  const formatHourShort = (h) => {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    return `${hour12} ${ampm}`;
+  };
+
+  const formatHourFull = (h) => {
     const ampm = h >= 12 ? 'PM' : 'AM';
     const hour12 = h % 12 === 0 ? 12 : h % 12;
     return `${hour12}:00 ${ampm}`;
@@ -26,8 +33,8 @@ export default function Schedule({ bookings, onSelectSlot }) {
   // Get active selected date display title
   const activeDateObj = new Date(selectedDateStr + 'T00:00:00');
   const displayDateStr = activeDateObj.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
+    weekday: 'short',
+    month: 'short',
     day: 'numeric'
   });
 
@@ -35,7 +42,7 @@ export default function Schedule({ bookings, onSelectSlot }) {
   const dateEvents = bookings.filter((b) => b.date === selectedDateStr);
 
   // Generate hourly slots from 6 AM (6) to 11 PM (23) -> 17 slots
-  const slots = [];
+  const allSlots = [];
   for (let h = 6; h < 23; h++) {
     const startH = h < 10 ? '0' + h : '' + h;
     const endH = h + 1 < 10 ? '0' + (h + 1) : '' + (h + 1);
@@ -46,14 +53,26 @@ export default function Schedule({ bookings, onSelectSlot }) {
       return slotStart < e.end_time && slotEnd > e.start_time;
     });
 
-    slots.push({
+    let period = 'morning';
+    if (h >= 12 && h < 17) period = 'afternoon';
+    if (h >= 17) period = 'evening';
+
+    allSlots.push({
       hour: h,
+      period,
       slotStart,
       slotEnd,
       isBooked,
-      label: `${formatHour(h)} – ${formatHour(h + 1)}`
+      shortLabel: `${formatHourShort(h)} - ${formatHourShort(h + 1)}`,
+      fullLabel: `${formatHourFull(h)} – ${formatHourFull(h + 1)}`
     });
   }
+
+  // Filter slots by selected time period
+  const filteredSlots = allSlots.filter((s) => {
+    if (timeFilter === 'all') return true;
+    return s.period === timeFilter;
+  });
 
   const handleSlotClick = (slot) => {
     if (slot.isBooked) return;
@@ -67,17 +86,17 @@ export default function Schedule({ bookings, onSelectSlot }) {
   return (
     <section id="schedule">
       <div className="container">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '2rem' }}>
+        <div className="sch-header">
           <div>
             <span className="eyebrow"></span>
             <span className="label">Live Availability</span>
             <h2 className="h2">Arena Schedule & Slots</h2>
-            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
-              Select a date and click any available slot to reserve.
+            <p className="sch-subtitle">
+              Select a date and click any open slot to reserve.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.375rem', background: 'var(--bg2)', padding: '4px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+          <div className="sch-view-tabs">
             <button
               type="button"
               className={`sch-tab-btn ${viewMode === 'slots' ? 'active' : ''}`}
@@ -96,11 +115,11 @@ export default function Schedule({ bookings, onSelectSlot }) {
         </div>
 
         {viewMode === 'slots' ? (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: '12px', padding: '1.75rem' }}>
-            <div style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--sub)', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
-              Select Date
+          <div className="sch-box">
+            <div className="sch-box-head">
+              <div className="sch-label">Select Date</div>
             </div>
-            
+
             {/* Swipable Date Strip */}
             <div className="date-strip">
               {dateOptions.map((item) => (
@@ -115,57 +134,85 @@ export default function Schedule({ bookings, onSelectSlot }) {
               ))}
             </div>
 
+            {/* Time Period Filter Chips */}
+            <div className="time-filter-bar">
+              <button
+                type="button"
+                className={`filter-chip ${timeFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('all')}
+              >
+                All (17)
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${timeFilter === 'morning' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('morning')}
+              >
+                Morning (6-12)
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${timeFilter === 'afternoon' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('afternoon')}
+              >
+                Afternoon (12-5)
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${timeFilter === 'evening' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('evening')}
+              >
+                Evening (5-11)
+              </button>
+            </div>
+
             {/* Slots Grid Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--line)' }}>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fafafa' }}>
-                Available Slots for {displayDateStr}
+            <div className="slots-subhead">
+              <div className="slots-title">
+                Slots for {displayDateStr}
               </div>
-              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--muted)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4ade80' }}></span>
-                  Available
+              <div className="slots-legend">
+                <span className="legend-item">
+                  <span className="dot dot-avail"></span> Available
                 </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#f87171' }}></span>
-                  Booked
+                <span className="legend-item">
+                  <span className="dot dot-booked"></span> Booked
                 </span>
               </div>
             </div>
 
             {/* Slots Grid */}
             <div className="slots-grid">
-              {slots.map((slot) => (
+              {filteredSlots.map((slot) => (
                 <div
                   key={slot.slotStart}
                   className={`slot-card ${slot.isBooked ? 'booked' : 'available'}`}
                   onClick={() => handleSlotClick(slot)}
                 >
-                  <div className="slot-time">{slot.label}</div>
+                  <div className="slot-time">
+                    <span className="time-short">{slot.shortLabel}</span>
+                    <span className="time-full">{slot.fullLabel}</span>
+                  </div>
                   <div className="slot-status-badge">
                     <span
-                      style={{
-                        width: '5px',
-                        height: '5px',
-                        borderRadius: '50%',
-                        background: slot.isBooked ? '#f87171' : '#4ade80'
-                      }}
+                      className={`dot ${slot.isBooked ? 'dot-booked' : 'dot-avail'}`}
                     ></span>
-                    {slot.isBooked ? 'Booked' : 'Available'}
+                    <span className="status-text">{slot.isBooked ? 'Booked' : 'Available'}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: '12px', padding: '1.75rem' }}>
+          <div className="sch-box">
             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fafafa', marginBottom: '1rem' }}>
               Weekly Pitch Schedule
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+            <div className="timeline-scroll">
+              <table className="timeline-table">
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--sub)' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>Time Slot</th>
+                    <th className="timeline-time-head">Time Slot</th>
                     {dateOptions.map((d) => (
                       <th key={d.iso} style={{ padding: '0.75rem', textAlign: 'center', minWidth: '90px' }}>
                         <div>{d.dow}</div>
@@ -180,8 +227,8 @@ export default function Schedule({ bookings, onSelectSlot }) {
                     const endH = h + 1 < 10 ? '0' + (h + 1) : '' + (h + 1);
                     return (
                       <tr key={h} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <td style={{ padding: '0.75rem', color: 'var(--sub)', fontWeight: 500 }}>
-                          {formatHour(h)} – {formatHour(h + 1)}
+                        <td className="timeline-time-cell">
+                          {formatHourFull(h)} – {formatHourFull(h + 1)}
                         </td>
                         {dateOptions.map((d) => {
                           const dayBookings = bookings.filter((b) => b.date === d.iso);

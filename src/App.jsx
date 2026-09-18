@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -12,6 +12,7 @@ import Toast from './components/Toast';
 import { INITIAL_BOOKINGS } from './data/mockData';
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [toasts, setToasts] = useState([]);
   const [formData, setFormData] = useState({
@@ -23,6 +24,11 @@ export default function App() {
     end_time: '18:00',
     message: ''
   });
+
+  useEffect(() => {
+    const loaderTimer = window.setTimeout(() => setIsLoading(false), 1100);
+    return () => window.clearTimeout(loaderTimer);
+  }, []);
 
   const addToast = (message, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -93,6 +99,15 @@ export default function App() {
 
   return (
     <div className="app">
+      {isLoading && (
+        <div className="page-loader" role="status" aria-label="Loading JNL">
+          <div className="loader-mark">
+            <img src="/images/jnl_logo.png" alt="" />
+          </div>
+          <div className="loader-wordmark">JNL</div>
+          <div className="loader-line"><span></span></div>
+        </div>
+      )}
       <Toast toasts={toasts} onDismiss={removeToast} />
       <Navbar />
       <main>
