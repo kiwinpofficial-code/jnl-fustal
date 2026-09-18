@@ -4,7 +4,7 @@ export default function Toast({ toasts, onDismiss }) {
   if (!toasts || toasts.length === 0) return null;
 
   return (
-    <div class="toasts">
+    <div className="toasts">
       {toasts.map((toast) => (
         <div
           key={toast.id}

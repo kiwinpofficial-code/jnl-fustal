@@ -90,9 +90,9 @@ export default function Schedule({ bookings, onSelectSlot }) {
           <div>
             <span className="eyebrow"></span>
             <span className="label">Live Availability</span>
-            <h2 className="h2">Arena Schedule & Slots</h2>
+            <h2 className="h2">Single Pitch Schedule</h2>
             <p className="sch-subtitle">
-              Select a date and click any open slot to reserve.
+              Select a date and reserve an open hour on our futsal pitch.
             </p>
           </div>
 
@@ -206,7 +206,7 @@ export default function Schedule({ bookings, onSelectSlot }) {
         ) : (
           <div className="sch-box">
             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fafafa', marginBottom: '1rem' }}>
-              Weekly Pitch Schedule
+              Single Pitch Weekly Schedule
             </div>
             <div className="timeline-scroll">
               <table className="timeline-table">

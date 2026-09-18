@@ -28,7 +28,6 @@ export default function Hero() {
             <a href="#schedule" className="btn-outline">View Schedule</a>
           </div>
         </div>
-        <div></div>
         <div className="hero-stats-bar">
           <div className="hstat">
             <div className="hstat-val">6 AM</div>
